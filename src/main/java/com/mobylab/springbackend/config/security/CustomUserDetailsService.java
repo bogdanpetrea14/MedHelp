@@ -1,6 +1,5 @@
 package com.mobylab.springbackend.config.security;
 
-import com.mobylab.springbackend.entity.Role;
 import com.mobylab.springbackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,25 +11,33 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
     @Autowired
     private UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         Optional<com.mobylab.springbackend.entity.User> optionalUser = userRepository.findUserByEmail(email);
+
         if (optionalUser.isPresent()) {
             com.mobylab.springbackend.entity.User user = optionalUser.get();
-            return new User(user.getEmail(), user.getPassword(), mapRolesToAuthorities(user.getRoles()));
-        } else
+            // Extragem Enum-ul nostru și îl mapam la ce așteaptă Spring Security
+            return new User(user.getEmail(), user.getPassword(), mapRolesToAuthorities(user));
+        } else {
             throw new UsernameNotFoundException("User not found");
+        }
     }
-    private Collection<GrantedAuthority> mapRolesToAuthorities(List<Role> roles){
-        return roles.stream().map(role->new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
+
+    // Am modificat metoda sa primeasca user-ul si sa foloseasca noul camp getRole()
+    private Collection<GrantedAuthority> mapRolesToAuthorities(com.mobylab.springbackend.entity.User user){
+        // Spring Security asteapta de obicei formatul "ROLE_ADMIN", "ROLE_DOCTOR" etc.
+        // Daca in controlerele tale vechi foloseai hasAuthority('ADMIN'), lasa fara 'ROLE_'
+        String authorityName = user.getRole().name();
+        return Collections.singletonList(new SimpleGrantedAuthority(authorityName));
     }
 }

@@ -32,7 +32,7 @@ server:
 
 token:
   ttl: 3600000
-  secret: "https://www.youtube.com/watch?v=VBUMYOYJISc"
+  secret: "Y2E3Y2RmYmE4ZTU4N2RmODFmZTEzN2NiMGRmNWVkZmRjNzBjZjQzYmQ1NTY1YjVlZjRmNjQ1ZWRmYzJjZjA0ZQ=="
 
 admin:
   username: admin
