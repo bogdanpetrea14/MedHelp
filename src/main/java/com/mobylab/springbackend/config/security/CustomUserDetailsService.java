@@ -26,17 +26,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         if (optionalUser.isPresent()) {
             com.mobylab.springbackend.entity.User user = optionalUser.get();
-            // Extragem Enum-ul nostru și îl mapam la ce așteaptă Spring Security
             return new User(user.getEmail(), user.getPassword(), mapRolesToAuthorities(user));
         } else {
             throw new UsernameNotFoundException("User not found");
         }
     }
 
-    // Am modificat metoda sa primeasca user-ul si sa foloseasca noul camp getRole()
     private Collection<GrantedAuthority> mapRolesToAuthorities(com.mobylab.springbackend.entity.User user){
-        // Spring Security asteapta de obicei formatul "ROLE_ADMIN", "ROLE_DOCTOR" etc.
-        // Daca in controlerele tale vechi foloseai hasAuthority('ADMIN'), lasa fara 'ROLE_'
         String authorityName = user.getRole().name();
         return Collections.singletonList(new SimpleGrantedAuthority(authorityName));
     }

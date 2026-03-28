@@ -1,4 +1,4 @@
-CREATE SCHEMA medconnect;
+CREATE SCHEMA IF NOT EXISTS medconnect;
 SET search_path = medconnect, pg_catalog;
 
 CREATE TYPE user_role AS ENUM ('ADMIN', 'DOCTOR', 'PATIENT', 'PHARMACY');

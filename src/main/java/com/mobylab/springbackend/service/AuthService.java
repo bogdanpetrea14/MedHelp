@@ -1,10 +1,10 @@
 package com.mobylab.springbackend.service;
 
 import com.mobylab.springbackend.config.security.JwtGenerator;
-import com.mobylab.springbackend.entity.Role;
 import com.mobylab.springbackend.entity.User;
+import com.mobylab.springbackend.enums.UserRole;
+import com.mobylab.springbackend.enums.UserStatus;
 import com.mobylab.springbackend.exception.BadRequestException;
-import com.mobylab.springbackend.repository.RoleRepository;
 import com.mobylab.springbackend.repository.UserRepository;
 import com.mobylab.springbackend.service.dto.LoginDto;
 import com.mobylab.springbackend.service.dto.RegisterDto;
@@ -17,9 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,28 +28,21 @@ public class AuthService {
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
     private AuthenticationManager authenticationManager;
-
     @Autowired
     private JwtGenerator jwtGenerator;
 
-
     public void register(RegisterDto registerDto) {
-
         if(userRepository.existsUserByEmail(registerDto.getEmail())) {
             throw new BadRequestException("Email is already used");
         }
 
-        List<Role> roleList = new ArrayList<>();
-        roleList.add(roleRepository.findRoleByName("USER").get());
-
+        // Setam rolul default ca PACIENT, status ACTIVE
         userRepository.save(new User()
                 .setEmail(registerDto.getEmail())
                 .setPassword(passwordEncoder.encode(registerDto.getPassword()))
-                .setUsername(registerDto.getUsername())
-                .setRoles(roleList));
+                .setRole(UserRole.PATIENT)
+                .setStatus(UserStatus.ACTIVE));
     }
 
     public String login(LoginDto loginDto) {
@@ -67,6 +57,5 @@ public class AuthService {
                         loginDto.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         return jwtGenerator.generateToken(authentication);
-
     }
 }
