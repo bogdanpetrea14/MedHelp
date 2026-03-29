@@ -2,6 +2,7 @@ package com.mobylab.springbackend.controller;
 
 import com.mobylab.springbackend.dto.AllergyResponseDto;
 import com.mobylab.springbackend.dto.CreateAllergyDto;
+import com.mobylab.springbackend.repository.AllergyRepository;
 import com.mobylab.springbackend.service.AllergyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.UUID;
 public class AllergyController {
 
     private final AllergyService allergyService;
+    private final AllergyRepository allergyRepository;
 
     @PostMapping
     @PreAuthorize("hasAuthority('PATIENT') or hasAuthority('DOCTOR')")
@@ -29,5 +31,18 @@ public class AllergyController {
     @PreAuthorize("hasAuthority('PATIENT') or hasAuthority('DOCTOR')")
     public ResponseEntity<List<AllergyResponseDto>> getPatientAllergies(@PathVariable UUID patientId) {
         return ResponseEntity.ok(allergyService.getPatientAllergies(patientId));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('PATIENT') or hasAuthority('DOCTOR')")
+    public ResponseEntity<Void> deleteAllergy(@PathVariable UUID id) {
+        allergyRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('PATIENT') or hasAuthority('ADMIN')")
+    public ResponseEntity<List<AllergyResponseDto>> getAllergies() {
+        return ResponseEntity.ok(allergyService.getAllergiesForCurrentUser());
     }
 }

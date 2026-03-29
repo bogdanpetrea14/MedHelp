@@ -142,4 +142,8 @@ public class PrescriptionService {
         prescription.setStatus(dto.getStatus());
         prescriptionRepository.save(prescription);
     }
+
+    public List<Prescription> getAllPrescriptions() {
+        return prescriptionRepository.findAll();
+    }
 }

@@ -2,6 +2,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import Navbar from './components/Navbar';
 import { Box } from '@mui/material';
+import PrescriptionsPage from './pages/PrescriptionsPage';
+import AllergiesPage from './pages/AllergiesPage'; // Asigură-te că importul e corect
 
 function App() {
     const location = useLocation();
@@ -18,6 +20,8 @@ function App() {
                 <Routes>
                     <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/prescriptions" element={<PrescriptionsPage />} />
+                    <Route path="/allergies" element={<AllergiesPage />} />
 
                     {/* Rute Protejate (Dashboard, Rețete, Alergii) */}
                     <Route path="/dashboard" element={

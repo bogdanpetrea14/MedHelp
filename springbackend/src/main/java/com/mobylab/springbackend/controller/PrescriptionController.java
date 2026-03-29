@@ -61,4 +61,11 @@ public class PrescriptionController {
         prescriptionService.fulfillPrescription(code, dto);
         return ResponseEntity.ok("Rețeta a fost actualizată, iar stocul farmaciei a fost redus cu succes!");
     }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<List<Prescription>> getAllPrescriptions() {
+        return ResponseEntity.ok(prescriptionService.getAllPrescriptions());
+        // În service doar faci: return prescriptionRepository.findAll();
+    }
 }

@@ -1,5 +1,6 @@
 package com.mobylab.springbackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -17,7 +18,8 @@ public class PrescriptionItem {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "prescription_id", nullable = false)
+    @JoinColumn(name = "prescription_id")
+    @JsonBackReference // Spune: "Nu mai afișa rețeta înapoi, că intrăm în buclă"
     private Prescription prescription;
 
     @ManyToOne

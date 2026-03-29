@@ -9,8 +9,6 @@ import java.util.UUID;
 
 @Getter @Setter @Accessors(chain = true)
 public class CreateAllergyDto {
-    @NotNull(message = "ID-ul pacientului este obligatoriu!")
-    private UUID patientId;
     @NotNull(message = "ID-ul substanței active este obligatoriu!")
     private UUID activeSubstanceId;
     @NotNull(message = "Severitatea este obligatorie!")

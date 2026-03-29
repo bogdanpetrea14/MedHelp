@@ -1,5 +1,6 @@
 package com.mobylab.springbackend.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.mobylab.springbackend.enums.PrescriptionStatus;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -18,7 +19,7 @@ public class Prescription {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @OneToMany(mappedBy = "prescription", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "prescription", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<PrescriptionItem> items = new ArrayList<>();
 
     public List<PrescriptionItem> getItems() { return items; }

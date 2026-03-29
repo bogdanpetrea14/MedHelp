@@ -12,4 +12,6 @@ public class AllergyResponseDto {
     private String activeSubstanceName;
     private AllergySeverity severity;
     private String notes;
+    // name
+    private String patientName;
 }

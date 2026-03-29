@@ -9,12 +9,17 @@ import com.mobylab.springbackend.exception.BadRequestException;
 import com.mobylab.springbackend.repository.ActiveSubstanceRepository;
 import com.mobylab.springbackend.repository.AllergyRepository;
 import com.mobylab.springbackend.repository.PatientRepository;
+import com.mobylab.springbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,20 +30,18 @@ public class AllergyService {
     private final ActiveSubstanceRepository activeSubstanceRepository;
 
     public void createAllergy(CreateAllergyDto dto) {
-        // 1. Verificăm dacă pacientul există
-        Patient patient = patientRepository.findById(dto.getPatientId())
-                .orElseThrow(() -> new BadRequestException("Pacientul nu există!"));
+        // Luam pacientul din token
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Patient patient = patientRepository.findByUserEmail(email)
+                .orElseThrow(() -> new BadRequestException("Profil de pacient inexistent!"));
 
-        // 2. Verificăm dacă substanța activă există
         ActiveSubstance substance = activeSubstanceRepository.findById(dto.getActiveSubstanceId())
                 .orElseThrow(() -> new BadRequestException("Substanța activă nu există!"));
 
-        // 3. Verificăm să nu aibă deja această alergie înregistrată
         if (allergyRepository.existsByPatientIdAndActiveSubstanceId(patient.getId(), substance.getId())) {
             throw new BadRequestException("Această alergie este deja înregistrată pentru acest pacient!");
         }
 
-        // 4. Salvăm alergia
         Allergy allergy = new Allergy()
                 .setPatient(patient)
                 .setActiveSubstance(substance)
@@ -58,8 +61,32 @@ public class AllergyService {
     private AllergyResponseDto mapToResponseDto(Allergy allergy) {
         return new AllergyResponseDto()
                 .setId(allergy.getId())
-                .setActiveSubstanceName(allergy.getActiveSubstance().getName()) // Verifică dacă e .getName() sau altceva la tine
+                .setActiveSubstanceName(allergy.getActiveSubstance().getName())
                 .setSeverity(allergy.getSeverity())
-                .setNotes(allergy.getNotes());
+                .setNotes(allergy.getNotes())
+                .setPatientName(allergy.getPatient().getFirstName() + " " + allergy.getPatient().getLastName());
+    }
+
+    public List<AllergyResponseDto> getAllergiesForCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
+
+        if (isAdmin) {
+            return allergyRepository.findAll()
+                    .stream()
+                    .map(this::mapToResponseDto)
+                    .collect(Collectors.toList());
+        }
+
+        // e PATIENT — returnăm doar ale lui
+        Patient patient = patientRepository.findByUserEmail(email)
+                .orElseThrow(() -> new BadRequestException("Profil de pacient inexistent!"));
+
+        return allergyRepository.findAllByPatientId(patient.getId())
+                .stream()
+                .map(this::mapToResponseDto)
+                .collect(Collectors.toList());
     }
 }
