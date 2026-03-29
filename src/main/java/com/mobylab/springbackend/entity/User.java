@@ -19,8 +19,6 @@ public class User {
     @Column(name = "id")
     private UUID id;
 
-    // AM SCOS USERNAME-UL DE AICI
-
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
@@ -44,7 +42,6 @@ public class User {
     // --- Getters & Setters ---
 
     public UUID getId() { return id; }
-    public User setId(UUID id) { this.id = id; return this; }
 
     public String getEmail() { return email; }
     public User setEmail(String email) { this.email = email; return this; }

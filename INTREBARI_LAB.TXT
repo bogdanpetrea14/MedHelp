@@ -1,0 +1,2 @@
+1. trebuie sa avem explicit relatii ManyToMany (sau putem sa explicam unde aveam si le am rezolvat prin tabele
+intermediare pe care le am creat de la inceput)
