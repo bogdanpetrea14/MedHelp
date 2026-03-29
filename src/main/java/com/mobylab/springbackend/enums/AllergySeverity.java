@@ -1,2 +1,6 @@
 package com.mobylab.springbackend.enums;
-public enum AllergySeverity { LOW, MEDIUM, HIGH, CRITICAL }
+public enum AllergySeverity {
+    MILD,
+    MODERATE,
+    SEVERE
+}
