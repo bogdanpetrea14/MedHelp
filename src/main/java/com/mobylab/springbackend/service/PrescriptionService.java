@@ -24,10 +24,9 @@ public class PrescriptionService {
     private final PatientRepository patientRepository;
     private final ActiveSubstanceRepository activeSubstanceRepository;
     private final EmailService emailService;
-
-    // --- NOILE DEPENDINȚE PENTRU STOCUL FARMACIEI ---
     private final PharmacyStockRepository stockRepository;
     private final PharmacyService pharmacyService;
+    private final AllergyRepository allergyRepository;
 
     @Transactional
     public void createPrescription(CreatePrescriptionDto dto) {
@@ -39,6 +38,22 @@ public class PrescriptionService {
         // 2. Identificăm Pacientul
         Patient patient = patientRepository.findById(dto.getPatientId())
                 .orElseThrow(() -> new BadRequestException("Pacientul specificat nu există!"));
+
+        // --- 🛡️ LOGICA DE VERIFICARE ALERGII ---
+        // Recuperăm toate alergiile cunoscute ale acestui pacient
+        List<Allergy> patientAllergies = allergyRepository.findAllByPatientId(patient.getId());
+
+        // Verificăm fiecare substanță din DTO înainte de a crea obiectele Entity
+        for (var itemDto : dto.getItems()) {
+            for (Allergy allergy : patientAllergies) {
+                if (allergy.getActiveSubstance().getId().equals(itemDto.getActiveSubstanceId())) {
+                    throw new BadRequestException("ATENȚIE: Pacientul este ALERGIC la "
+                            + allergy.getActiveSubstance().getName()
+                            + " (Severitate: " + allergy.getSeverity() + "). Rețeta nu a fost emisă!");
+                }
+            }
+        }
+        // ----------------------------------------
 
         // 3. Generăm codul unic
         String uniqueCode = generateUniquePrescriptionCode();
@@ -67,7 +82,7 @@ public class PrescriptionService {
         prescription.setItems(items);
         prescriptionRepository.save(prescription);
 
-        // Trimitere email la pacient
+        // 6. Trimitere email la pacient (doar dacă nu s-a aruncat nicio eroare de alergie mai sus)
         emailService.sendPrescriptionEmail(
                 patient.getUser().getEmail(),
                 patient.getFirstName() + " " + patient.getLastName(),
@@ -75,9 +90,6 @@ public class PrescriptionService {
         );
     }
 
-    /**
-     * Returnează rețetele pacientului logat
-     */
     public List<Prescription> getPrescriptionsForCurrentPatient() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         Patient patient = patientRepository.findByUserEmail(email)
@@ -86,9 +98,6 @@ public class PrescriptionService {
         return prescriptionRepository.findAllByPatientId(patient.getId());
     }
 
-    /**
-     * Căutare după cod (pentru Farmacie)
-     */
     public Prescription getByUniqueCode(String code) {
         return prescriptionRepository.findByUniqueCode(code)
                 .orElseThrow(() -> new BadRequestException("Rețeta cu codul " + code + " nu a fost găsită!"));
@@ -102,23 +111,15 @@ public class PrescriptionService {
         return code;
     }
 
-    /**
-     * NOUA LOGICĂ DE ELIBERARE (Care scade și stocul!)
-     * (Înlocuiește vechea metodă updatePrescriptionStatus)
-     */
     @Transactional
     public void fulfillPrescription(String uniqueCode, FulfillDto dto) {
-
-        // 1. Validăm statusul (O farmacie poate doar să dea medicamente, nu să anuleze rețete)
         if (dto.getStatus() != PrescriptionStatus.FULFILLED && dto.getStatus() != PrescriptionStatus.PARTIALLY_FULFILLED) {
             throw new BadRequestException("Status invalid! O farmacie poate doar să elibereze (total sau parțial) o rețetă.");
         }
 
-        // 2. Găsim rețeta după cod
         Prescription prescription = prescriptionRepository.findByUniqueCode(uniqueCode)
                 .orElseThrow(() -> new BadRequestException("Rețeta cu codul " + uniqueCode + " nu a fost găsită!"));
 
-        // 3. Verificăm dacă mai poate fi folosită
         if (prescription.getStatus() == PrescriptionStatus.FULFILLED) {
             throw new BadRequestException("Această rețetă a fost deja eliberată complet!");
         }
@@ -126,23 +127,18 @@ public class PrescriptionService {
             throw new BadRequestException("Această rețetă a fost anulată de doctor!");
         }
 
-        // 4. Aflăm cine e farmacia care face cererea
         Pharmacy currentPharmacy = pharmacyService.getCurrentPharmacy();
 
-        // 5. Căutăm medicamentul exact pe raftul farmaciei
         PharmacyStock stock = stockRepository.findByPharmacyIdAndMedicationId(currentPharmacy.getId(), dto.getMedicationId())
                 .orElseThrow(() -> new BadRequestException("Acest medicament nu se află în stocul farmaciei tale!"));
 
-        // 6. Verificăm dacă avem suficiente cutii pe raft
         if (stock.getQuantity() < dto.getQuantity()) {
             throw new BadRequestException("Stoc insuficient! Mai ai doar " + stock.getQuantity() + " bucăți pe raft.");
         }
 
-        // 7. SCĂDEM STOCUL DE PE RAFT
         stock.setQuantity(stock.getQuantity() - dto.getQuantity());
-        stockRepository.save(stock); // Salvăm noua cantitate
+        stockRepository.save(stock);
 
-        // 8. ACTUALIZĂM STAREA REȚETEI
         prescription.setStatus(dto.getStatus());
         prescriptionRepository.save(prescription);
     }
