@@ -1,6 +1,7 @@
 package com.mobylab.springbackend.service;
 
 import com.mobylab.springbackend.config.security.JwtGenerator;
+import com.mobylab.springbackend.dto.LoginResponseDto;
 import com.mobylab.springbackend.entity.User;
 import com.mobylab.springbackend.enums.UserRole;
 import com.mobylab.springbackend.enums.UserStatus;
@@ -45,17 +46,27 @@ public class AuthService {
                 .setStatus(UserStatus.ACTIVE));
     }
 
-    public String login(LoginDto loginDto) {
-        Optional<User> optionalUser = userRepository.findUserByEmail(loginDto.getEmail());
-        if(optionalUser.isEmpty()) {
-            throw new BadRequestException("Wrong credentials");
-        }
-
+    public LoginResponseDto login(LoginDto loginDto) {
+        // 1. Încercăm autentificarea
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginDto.getEmail(),
                         loginDto.getPassword()));
+
+        // 2. Setăm contextul (important pentru sesiunea curentă)
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        return jwtGenerator.generateToken(authentication);
+
+        // 3. Generăm token-ul
+        String token = jwtGenerator.generateToken(authentication);
+
+        // 4. Căutăm user-ul ca să îi aflăm rolul (știm că există deja, altfel pica la pasul 1)
+        User user = userRepository.findUserByEmail(loginDto.getEmail())
+                .orElseThrow(() -> new BadRequestException("User not found"));
+
+        // 5. Returnăm DTO-ul complet
+        return new LoginResponseDto()
+                .setToken(token)
+                .setRole(user.getRole())
+                .setExpiresIn(3600); // 1 oră
     }
 }

@@ -32,18 +32,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
+    public ResponseEntity<LoginResponseDto> login(@RequestBody LoginDto loginDto) {
         logger.info("Request to login for user {}", loginDto.getEmail());
-        String token = authService.login(loginDto);
+
+        // Apelăm service-ul și primim direct pachetul complet
+        LoginResponseDto response = authService.login(loginDto);
+
         logger.info("Successfully logged in user {}", loginDto.getEmail());
-
-        // Cream instanța de DTO pe loc, nu o mai injectăm
-        LoginResponseDto response = new LoginResponseDto().setToken(token);
-
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return ResponseEntity.ok(response);
     }
 
-    @SecurityRequirement(name = "Bearer Authentication")
     @GetMapping("/token")
     public ResponseEntity<?> validateToken() {
         UserDetails user = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();

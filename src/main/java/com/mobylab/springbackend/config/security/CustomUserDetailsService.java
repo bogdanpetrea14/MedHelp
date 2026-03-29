@@ -33,6 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private Collection<GrantedAuthority> mapRolesToAuthorities(com.mobylab.springbackend.entity.User user){
+        // SCOATE "ROLE_" de aici! Lasă doar numele din Enum (ADMIN, PATIENT)
         String authorityName = user.getRole().name();
         return Collections.singletonList(new SimpleGrantedAuthority(authorityName));
     }
