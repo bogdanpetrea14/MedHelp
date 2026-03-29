@@ -1,9 +1,0 @@
-CREATE SCHEMA IF NOT EXISTS medconnect;
-SET search_path = medconnect, pg_catalog;
-
-CREATE TYPE user_role AS ENUM ('ADMIN', 'DOCTOR', 'PATIENT', 'PHARMACY');
-CREATE TYPE user_status AS ENUM ('PENDING', 'ACTIVE', 'REJECTED');
-CREATE TYPE allergy_severity AS ENUM ('MILD', 'MODERATE', 'SEVERE');
-CREATE TYPE prescription_status AS ENUM ('PRESCRIBED', 'FULFILLED', 'PARTIALLY_FULFILLED', 'CANCELLED');
-CREATE TYPE feedback_category AS ENUM ('BUG', 'SUGGESTION', 'OTHER');
-CREATE TYPE feedback_rating AS ENUM ('POSITIVE', 'NEUTRAL', 'NEGATIVE');
