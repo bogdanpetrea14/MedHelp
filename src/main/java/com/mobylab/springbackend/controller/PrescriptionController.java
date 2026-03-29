@@ -2,6 +2,7 @@ package com.mobylab.springbackend.controller;
 
 import com.mobylab.springbackend.dto.CreatePrescriptionDto;
 import com.mobylab.springbackend.entity.Prescription;
+import com.mobylab.springbackend.enums.PrescriptionStatus;
 import com.mobylab.springbackend.service.PrescriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -45,5 +46,19 @@ public class PrescriptionController {
     @PreAuthorize("hasRole('PHARMACY')")
     public ResponseEntity<Prescription> searchByCode(@RequestParam String code) {
         return ResponseEntity.ok(prescriptionService.getByUniqueCode(code));
+    }
+
+    /**
+     * Endpoint pentru Farmacie: Eliberarea (marcarea) rețetei
+     * Folosim PATCH pentru că actualizăm doar un singur câmp (statusul)
+     */
+    @PatchMapping("/{code}/fulfill")
+    @PreAuthorize("hasRole('PHARMACY')")
+    public ResponseEntity<String> fulfillPrescription(
+            @PathVariable String code,
+            @RequestParam PrescriptionStatus status) {
+
+        prescriptionService.updatePrescriptionStatus(code, status);
+        return ResponseEntity.ok("Statusul rețetei " + code + " a fost actualizat cu succes la: " + status);
     }
 }

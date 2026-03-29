@@ -95,4 +95,28 @@ public class PrescriptionService {
         } while (prescriptionRepository.existsByUniqueCode(code));
         return code;
     }
+
+    /**
+     * Logica de eliberare a rețetei (Farmacie)
+     */
+    @Transactional
+    public void updatePrescriptionStatus(String uniqueCode, PrescriptionStatus newStatus) {
+        // 1. Căutăm rețeta
+        Prescription prescription = prescriptionRepository.findByUniqueCode(uniqueCode)
+                .orElseThrow(() -> new BadRequestException("Rețeta cu codul " + uniqueCode + " nu a fost găsită!"));
+
+        // 2. Verificăm să nu fie deja eliberată complet
+        if (prescription.getStatus() == PrescriptionStatus.FULFILLED) {
+            throw new BadRequestException("Această rețetă a fost deja onorată integral și nu mai poate fi refolosită!");
+        }
+
+        // 3. Verificăm ca noul status să aibă sens (Farmacia poate da doar FULFILLED sau PARTIALLY_FULFILLED)
+        if (newStatus != PrescriptionStatus.FULFILLED && newStatus != PrescriptionStatus.PARTIALLY_FULFILLED) {
+            throw new BadRequestException("Status invalid pentru eliberarea din farmacie!");
+        }
+
+        // 4. Actualizăm și salvăm
+        prescription.setStatus(newStatus);
+        prescriptionRepository.save(prescription);
+    }
 }
