@@ -25,7 +25,6 @@ public class AllergyController {
         allergyService.createAllergy(dto);
         return ResponseEntity.ok("Alergia a fost înregistrată cu succes!");
     }
-
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasAuthority('PATIENT') or hasAuthority('DOCTOR')")
     public ResponseEntity<List<AllergyResponseDto>> getPatientAllergies(@PathVariable UUID patientId) {

@@ -10,8 +10,8 @@ public class CorsFilterConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:4200")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedOrigins("http://localhost:5173") // Portul de Vite/React
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // Am adăugat și PATCH pentru fulfill
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
