@@ -47,4 +47,13 @@ public class PharmacyService {
     public List<Pharmacy> getAll() {
         return pharmacyRepository.findAll();
     }
+
+    public Pharmacy getCurrentPharmacy() {
+        // Luăm emailul din token-ul de securitate JWT
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        // Căutăm farmacia în baza de date pe baza emailului
+        return pharmacyRepository.findByUserEmail(email)
+                .orElseThrow(() -> new BadRequestException("Farmacia nu a fost găsită pentru acest utilizator!"));
+    }
 }

@@ -1,6 +1,7 @@
 package com.mobylab.springbackend.service;
 
 import com.mobylab.springbackend.dto.CreatePrescriptionDto;
+import com.mobylab.springbackend.dto.FulfillDto;
 import com.mobylab.springbackend.entity.*;
 import com.mobylab.springbackend.enums.PrescriptionStatus;
 import com.mobylab.springbackend.exception.BadRequestException;
@@ -24,6 +25,10 @@ public class PrescriptionService {
     private final ActiveSubstanceRepository activeSubstanceRepository;
     private final EmailService emailService;
 
+    // --- NOILE DEPENDINȚE PENTRU STOCUL FARMACIEI ---
+    private final PharmacyStockRepository stockRepository;
+    private final PharmacyService pharmacyService;
+
     @Transactional
     public void createPrescription(CreatePrescriptionDto dto) {
         // 1. Identificăm Doctorul logat
@@ -45,7 +50,7 @@ public class PrescriptionService {
                 .setPatient(patient)
                 .setStatus(PrescriptionStatus.PRESCRIBED);
 
-        // 5. Adăugăm elementele rețetei (PrescriptionItems) - MAPARE EXACTĂ PE DTO-UL TĂU
+        // 5. Adăugăm elementele rețetei (PrescriptionItems)
         List<PrescriptionItem> items = dto.getItems().stream().map(itemDto -> {
             ActiveSubstance substance = activeSubstanceRepository.findById(itemDto.getActiveSubstanceId())
                     .orElseThrow(() -> new BadRequestException("Substanța activă nu a fost găsită!"));
@@ -53,8 +58,8 @@ public class PrescriptionService {
             return new PrescriptionItem()
                     .setPrescription(prescription)
                     .setActiveSubstance(substance)
-                    .setDose(itemDto.getDose())            // Folosește getDose() din DTO
-                    .setFrequency(itemDto.getFrequency()) // Folosește getFrequency() din DTO
+                    .setDose(itemDto.getDose())
+                    .setFrequency(itemDto.getFrequency())
                     .setDurationDays(itemDto.getDurationDays())
                     .setNotes(itemDto.getNotes());
         }).collect(Collectors.toList());
@@ -62,6 +67,7 @@ public class PrescriptionService {
         prescription.setItems(items);
         prescriptionRepository.save(prescription);
 
+        // Trimitere email la pacient
         emailService.sendPrescriptionEmail(
                 patient.getUser().getEmail(),
                 patient.getFirstName() + " " + patient.getLastName(),
@@ -97,26 +103,47 @@ public class PrescriptionService {
     }
 
     /**
-     * Logica de eliberare a rețetei (Farmacie)
+     * NOUA LOGICĂ DE ELIBERARE (Care scade și stocul!)
+     * (Înlocuiește vechea metodă updatePrescriptionStatus)
      */
     @Transactional
-    public void updatePrescriptionStatus(String uniqueCode, PrescriptionStatus newStatus) {
-        // 1. Căutăm rețeta
+    public void fulfillPrescription(String uniqueCode, FulfillDto dto) {
+
+        // 1. Validăm statusul (O farmacie poate doar să dea medicamente, nu să anuleze rețete)
+        if (dto.getStatus() != PrescriptionStatus.FULFILLED && dto.getStatus() != PrescriptionStatus.PARTIALLY_FULFILLED) {
+            throw new BadRequestException("Status invalid! O farmacie poate doar să elibereze (total sau parțial) o rețetă.");
+        }
+
+        // 2. Găsim rețeta după cod
         Prescription prescription = prescriptionRepository.findByUniqueCode(uniqueCode)
                 .orElseThrow(() -> new BadRequestException("Rețeta cu codul " + uniqueCode + " nu a fost găsită!"));
 
-        // 2. Verificăm să nu fie deja eliberată complet
+        // 3. Verificăm dacă mai poate fi folosită
         if (prescription.getStatus() == PrescriptionStatus.FULFILLED) {
-            throw new BadRequestException("Această rețetă a fost deja onorată integral și nu mai poate fi refolosită!");
+            throw new BadRequestException("Această rețetă a fost deja eliberată complet!");
+        }
+        if (prescription.getStatus() == PrescriptionStatus.CANCELLED) {
+            throw new BadRequestException("Această rețetă a fost anulată de doctor!");
         }
 
-        // 3. Verificăm ca noul status să aibă sens (Farmacia poate da doar FULFILLED sau PARTIALLY_FULFILLED)
-        if (newStatus != PrescriptionStatus.FULFILLED && newStatus != PrescriptionStatus.PARTIALLY_FULFILLED) {
-            throw new BadRequestException("Status invalid pentru eliberarea din farmacie!");
+        // 4. Aflăm cine e farmacia care face cererea
+        Pharmacy currentPharmacy = pharmacyService.getCurrentPharmacy();
+
+        // 5. Căutăm medicamentul exact pe raftul farmaciei
+        PharmacyStock stock = stockRepository.findByPharmacyIdAndMedicationId(currentPharmacy.getId(), dto.getMedicationId())
+                .orElseThrow(() -> new BadRequestException("Acest medicament nu se află în stocul farmaciei tale!"));
+
+        // 6. Verificăm dacă avem suficiente cutii pe raft
+        if (stock.getQuantity() < dto.getQuantity()) {
+            throw new BadRequestException("Stoc insuficient! Mai ai doar " + stock.getQuantity() + " bucăți pe raft.");
         }
 
-        // 4. Actualizăm și salvăm
-        prescription.setStatus(newStatus);
+        // 7. SCĂDEM STOCUL DE PE RAFT
+        stock.setQuantity(stock.getQuantity() - dto.getQuantity());
+        stockRepository.save(stock); // Salvăm noua cantitate
+
+        // 8. ACTUALIZĂM STAREA REȚETEI
+        prescription.setStatus(dto.getStatus());
         prescriptionRepository.save(prescription);
     }
 }
