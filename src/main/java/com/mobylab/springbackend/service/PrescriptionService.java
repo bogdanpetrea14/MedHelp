@@ -22,6 +22,7 @@ public class PrescriptionService {
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
     private final ActiveSubstanceRepository activeSubstanceRepository;
+    private final EmailService emailService;
 
     @Transactional
     public void createPrescription(CreatePrescriptionDto dto) {
@@ -60,6 +61,12 @@ public class PrescriptionService {
 
         prescription.setItems(items);
         prescriptionRepository.save(prescription);
+
+        emailService.sendPrescriptionEmail(
+                patient.getUser().getEmail(),
+                patient.getFirstName() + " " + patient.getLastName(),
+                uniqueCode
+        );
     }
 
     /**
