@@ -1,9 +1,14 @@
 package com.mobylab.springbackend.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.experimental.Accessors;
+
 import java.util.UUID;
 
 @Entity
+@Data
+@Accessors(chain = true)
 @Table(name = "prescription_items", schema = "medconnect")
 public class PrescriptionItem {
     @Id
