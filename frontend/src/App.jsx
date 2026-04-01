@@ -3,7 +3,8 @@ import LoginPage from './pages/LoginPage';
 import Navbar from './components/Navbar';
 import { Box } from '@mui/material';
 import PrescriptionsPage from './pages/PrescriptionsPage';
-import AllergiesPage from './pages/AllergiesPage'; // Asigură-te că importul e corect
+import AllergiesPage from './pages/AllergiesPage';
+import DashboardPage from './pages/DashboardPage';
 
 function App() {
     const location = useLocation();
@@ -23,27 +24,7 @@ function App() {
                     <Route path="/prescriptions" element={<PrescriptionsPage />} />
                     <Route path="/allergies" element={<AllergiesPage />} />
 
-                    {/* Rute Protejate (Dashboard, Rețete, Alergii) */}
-                    <Route path="/dashboard" element={
-                        <div>
-                            <h1>Bine ai venit în MedConnect</h1>
-                            <p>Folosește meniul de mai sus pentru a naviga.</p>
-                        </div>
-                    } />
-
-                    <Route path="/prescriptions" element={
-                        <div>
-                            <h1>Modul Rețete</h1>
-                            <p>Aici va apărea tabelul cu rețete (4 puncte în barem).</p>
-                        </div>
-                    } />
-
-                    <Route path="/allergies" element={
-                        <div>
-                            <h1>Modul Alergii / Stocuri</h1>
-                            <p>Aici vom gestiona alergiile sau stocurile farmaciei.</p>
-                        </div>
-                    } />
+                    <Route path="/dashboard" element={<DashboardPage />} />
 
                     {/* Fallback pentru rute inexistente */}
                     <Route path="*" element={<Navigate to="/" />} />
