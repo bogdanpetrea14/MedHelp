@@ -61,10 +61,27 @@ public class AllergyService {
     private AllergyResponseDto mapToResponseDto(Allergy allergy) {
         return new AllergyResponseDto()
                 .setId(allergy.getId())
+                .setActiveSubstanceId(allergy.getActiveSubstance().getId())
                 .setActiveSubstanceName(allergy.getActiveSubstance().getName())
                 .setSeverity(allergy.getSeverity())
                 .setNotes(allergy.getNotes())
                 .setPatientName(allergy.getPatient().getFirstName() + " " + allergy.getPatient().getLastName());
+    }
+
+    public void updateAllergy(UUID id, CreateAllergyDto dto) {
+        Allergy allergy = allergyRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Alergia nu a fost găsită!"));
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().contains(new SimpleGrantedAuthority("ADMIN"));
+
+        if (!isAdmin && !allergy.getPatient().getUser().getEmail().equals(email)) {
+            throw new BadRequestException("Nu poți modifica alergia altui pacient!");
+        }
+
+        allergy.setSeverity(dto.getSeverity()).setNotes(dto.getNotes());
+        allergyRepository.save(allergy);
     }
 
     public List<AllergyResponseDto> getAllergiesForCurrentUser() {

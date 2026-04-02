@@ -1,11 +1,14 @@
 package com.mobylab.springbackend.service;
 
+import com.mobylab.springbackend.dto.CancelPrescriptionDto;
 import com.mobylab.springbackend.dto.CreatePrescriptionDto;
 import com.mobylab.springbackend.dto.FulfillDto;
+import com.mobylab.springbackend.dto.UpdatePrescriptionDto;
 import com.mobylab.springbackend.entity.*;
 import com.mobylab.springbackend.enums.PrescriptionStatus;
 import com.mobylab.springbackend.exception.BadRequestException;
 import com.mobylab.springbackend.repository.*;
+import com.mobylab.springbackend.repository.PrescriptionCancellationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ import java.util.stream.Collectors;
 public class PrescriptionService {
 
     private final PrescriptionRepository prescriptionRepository;
+    private final PrescriptionCancellationRepository cancellationRepository;
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
     private final ActiveSubstanceRepository activeSubstanceRepository;
@@ -27,6 +31,7 @@ public class PrescriptionService {
     private final PharmacyStockRepository stockRepository;
     private final PharmacyService pharmacyService;
     private final AllergyRepository allergyRepository;
+    private final com.mobylab.springbackend.repository.UserRepository userRepository;
 
     @Transactional
     public void createPrescription(CreatePrescriptionDto dto) {
@@ -140,6 +145,73 @@ public class PrescriptionService {
         stockRepository.save(stock);
 
         prescription.setStatus(dto.getStatus());
+        prescriptionRepository.save(prescription);
+    }
+
+    public List<Prescription> getDoctorPrescriptions() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Doctor doctor = doctorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new BadRequestException("Profil de doctor inexistent!"));
+        return prescriptionRepository.findAllByDoctorId(doctor.getId());
+    }
+
+    public void deletePrescription(UUID id) {
+        prescriptionRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Rețeta nu a fost găsită!"));
+        prescriptionRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void cancelPrescription(UUID id, CancelPrescriptionDto dto) {
+        Prescription prescription = prescriptionRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Rețeta nu a fost găsită!"));
+
+        if (prescription.getStatus() == PrescriptionStatus.CANCELLED) {
+            throw new BadRequestException("Rețeta este deja anulată!");
+        }
+        if (prescription.getStatus() == PrescriptionStatus.FULFILLED) {
+            throw new BadRequestException("Nu poți anula o rețetă deja eliberată!");
+        }
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
+
+        if (!isAdmin && !prescription.getDoctor().getUser().getEmail().equals(email)) {
+            throw new BadRequestException("Nu poți anula rețeta altui doctor!");
+        }
+
+        User cancelledBy = userRepository.findUserByEmail(email)
+                .orElseThrow(() -> new BadRequestException("Utilizatorul nu a fost găsit!"));
+
+        prescription.setStatus(PrescriptionStatus.CANCELLED);
+        prescriptionRepository.save(prescription);
+
+        cancellationRepository.save(new PrescriptionCancellation()
+                .setPrescription(prescription)
+                .setCancelledBy(cancelledBy)
+                .setReason(dto.getReason()));
+    }
+
+    public void updatePrescription(UUID id, UpdatePrescriptionDto dto) {
+        Prescription prescription = prescriptionRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Rețeta nu a fost găsită!"));
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ADMIN"));
+
+        if (!isAdmin && !prescription.getDoctor().getUser().getEmail().equals(email)) {
+            throw new BadRequestException("Nu poți modifica rețeta altui doctor!");
+        }
+
+        if (dto.getDoctorNotes() != null) {
+            prescription.setDoctorNotes(dto.getDoctorNotes());
+        }
+        if (dto.getStatus() != null) {
+            prescription.setStatus(dto.getStatus());
+        }
+
         prescriptionRepository.save(prescription);
     }
 

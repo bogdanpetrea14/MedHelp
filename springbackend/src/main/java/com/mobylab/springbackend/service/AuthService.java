@@ -38,12 +38,16 @@ public class AuthService {
             throw new BadRequestException("Email is already used");
         }
 
-        // Setam rolul default ca PACIENT, status ACTIVE
+        UserRole role = (registerDto.getRole() != null) ? registerDto.getRole() : UserRole.PATIENT;
+
+        // PATIENT primeste cont activ imediat; DOCTOR si PHARMACY asteapta aprobarea adminului
+        UserStatus status = (role == UserRole.PATIENT) ? UserStatus.ACTIVE : UserStatus.PENDING;
+
         userRepository.save(new User()
                 .setEmail(registerDto.getEmail())
                 .setPassword(passwordEncoder.encode(registerDto.getPassword()))
-                .setRole(UserRole.PATIENT)
-                .setStatus(UserStatus.ACTIVE));
+                .setRole(role)
+                .setStatus(status));
     }
 
     public LoginResponseDto login(LoginDto loginDto) {
@@ -59,11 +63,22 @@ public class AuthService {
         // 3. Generăm token-ul
         String token = jwtGenerator.generateToken(authentication);
 
-        // 4. Căutăm user-ul ca să îi aflăm rolul (știm că există deja, altfel pica la pasul 1)
+        // 4. Căutăm user-ul ca să îi aflăm rolul și statusul
         User user = userRepository.findUserByEmail(loginDto.getEmail())
                 .orElseThrow(() -> new BadRequestException("User not found"));
 
-        // 5. Returnăm DTO-ul complet
+        // 5. Verificăm că nu e PENDING sau REJECTED
+        if (user.getStatus() == UserStatus.PENDING) {
+            throw new BadRequestException("Contul tău așteaptă aprobarea unui administrator.");
+        }
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new BadRequestException("Contul tău a fost suspendat. Contactează administratorul.");
+        }
+        if (user.getStatus() == UserStatus.REJECTED) {
+            throw new BadRequestException("Contul tău a fost respins. Contactează administratorul.");
+        }
+
+        // 6. Returnăm DTO-ul complet
         return new LoginResponseDto()
                 .setToken(token)
                 .setRole(user.getRole())

@@ -1,9 +1,11 @@
 package com.mobylab.springbackend.service;
 
+import com.mobylab.springbackend.dto.PatientResponseDto;
 import com.mobylab.springbackend.entity.Patient;
 import com.mobylab.springbackend.entity.User;
 import com.mobylab.springbackend.enums.UserRole;
 import com.mobylab.springbackend.exception.BadRequestException;
+import com.mobylab.springbackend.repository.DoctorRepository;
 import com.mobylab.springbackend.repository.PatientRepository;
 import com.mobylab.springbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +13,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +23,7 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final UserRepository userRepository;
+    private final DoctorRepository doctorRepository;
 
     /**
      * Crearea profilului de pacient (imediat după înregistrarea User-ului)
@@ -77,5 +82,41 @@ public class PatientService {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return patientRepository.findByUserEmail(email)
                 .orElseThrow(() -> new BadRequestException("Nu ai un profil de pacient configurat!"));
+    }
+
+    public List<PatientResponseDto> getAllPatients() {
+        return patientRepository.findAll()
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<PatientResponseDto> getMyPatients() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        com.mobylab.springbackend.entity.Doctor doctor = doctorRepository.findByUserEmail(email)
+                .orElseThrow(() -> new BadRequestException("Profil de doctor inexistent!"));
+        return patientRepository.findAllByPrimaryDoctorId(doctor.getId())
+                .stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    private PatientResponseDto mapToDto(Patient patient) {
+        PatientResponseDto dto = new PatientResponseDto()
+                .setId(patient.getId())
+                .setFirstName(patient.getFirstName())
+                .setLastName(patient.getLastName())
+                .setCnp(patient.getCnp())
+                .setBirthDate(patient.getBirthDate());
+        if (patient.getUser() != null) {
+            dto.setUserId(patient.getUser().getId());
+        }
+        if (patient.getPrimaryDoctor() != null) {
+            dto.setPrimaryDoctorId(patient.getPrimaryDoctor().getId());
+            dto.setPrimaryDoctorName(
+                patient.getPrimaryDoctor().getFirstName() + " " + patient.getPrimaryDoctor().getLastName()
+            );
+        }
+        return dto;
     }
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Container, Paper, TextField, Button, Typography, Box, Alert, InputAdornment, IconButton } from '@mui/material';
 import { Visibility, VisibilityOff, LockOutlined } from '@mui/icons-material';
 import api from '../api/axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -107,7 +107,10 @@ const LoginPage = () => {
 
                     <Box sx={{ mt: 2, textAlign: 'center' }}>
                         <Typography variant="body2">
-                            Nu ai cont? Contactează administratorul unității.
+                            Nu ai cont?{' '}
+                            <Link to="/register" style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 'bold' }}>
+                                Înregistrează-te
+                            </Link>
                         </Typography>
                     </Box>
                 </Paper>

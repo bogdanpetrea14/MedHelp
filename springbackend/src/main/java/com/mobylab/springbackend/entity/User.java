@@ -39,6 +39,9 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
     // --- Getters & Setters ---
 
     public UUID getId() { return id; }
@@ -57,4 +60,7 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public User setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public User setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; return this; }
 }

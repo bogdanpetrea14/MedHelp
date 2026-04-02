@@ -16,5 +16,7 @@ public class FeedbackResponseDto {
     private FeedbackCategory category;
     private FeedbackRating rating;
     private String details;
+    private Boolean allowContact;
+    private java.time.LocalDateTime createdAt;
 }
 

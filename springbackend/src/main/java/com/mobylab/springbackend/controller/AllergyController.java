@@ -33,6 +33,13 @@ public class AllergyController {
         return ResponseEntity.ok(allergyService.getPatientAllergies(patientId));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('PATIENT') or hasAuthority('DOCTOR')")
+    public ResponseEntity<String> updateAllergy(@PathVariable UUID id, @Valid @RequestBody CreateAllergyDto dto) {
+        allergyService.updateAllergy(id, dto);
+        return ResponseEntity.ok("Alergia a fost actualizată cu succes!");
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('PATIENT') or hasAuthority('DOCTOR')")
     public ResponseEntity<Void> deleteAllergy(@PathVariable UUID id) {

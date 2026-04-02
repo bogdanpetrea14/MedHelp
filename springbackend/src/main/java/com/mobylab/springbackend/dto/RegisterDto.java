@@ -1,5 +1,6 @@
 package com.mobylab.springbackend.dto;
 
+import com.mobylab.springbackend.enums.UserRole;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -9,4 +10,5 @@ public class RegisterDto {
     private String email;
     private String username;
     private String password;
+    private UserRole role;
 }

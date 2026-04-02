@@ -14,5 +14,7 @@ public interface PrescriptionRepository extends JpaRepository<Prescription, UUID
 
     // Găsește toate rețetele unui pacient folosind ID-ul lui
     List<Prescription> findAllByPatientId(UUID patientId);
+    long countByPatientId(UUID patientId);
+    List<Prescription> findAllByDoctorId(UUID doctorId);
     Optional<Prescription> findByUniqueCode(String uniqueCode);
 }

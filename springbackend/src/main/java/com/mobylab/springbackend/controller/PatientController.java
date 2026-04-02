@@ -1,5 +1,6 @@
 package com.mobylab.springbackend.controller;
 
+import com.mobylab.springbackend.dto.PatientResponseDto;
 import com.mobylab.springbackend.entity.Patient;
 import com.mobylab.springbackend.service.PatientService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -46,6 +48,18 @@ public class PatientController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT', 'PHARMACY')")
     public ResponseEntity<Patient> getPatientById(@PathVariable UUID id) {
-        return ResponseEntity.ok(patientService.getPatientById(id)); // <--- Adaugă "Patient" în numereturn ResponseEntity.ok(patientService.getById(id));
+        return ResponseEntity.ok(patientService.getPatientById(id));
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('DOCTOR')")
+    public ResponseEntity<List<PatientResponseDto>> getAllPatients() {
+        return ResponseEntity.ok(patientService.getAllPatients());
+    }
+
+    @GetMapping("/my-patients")
+    @PreAuthorize("hasAuthority('DOCTOR')")
+    public ResponseEntity<List<PatientResponseDto>> getMyPatients() {
+        return ResponseEntity.ok(patientService.getMyPatients());
     }
 }

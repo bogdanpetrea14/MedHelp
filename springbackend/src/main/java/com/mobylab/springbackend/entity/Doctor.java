@@ -35,6 +35,9 @@ public class Doctor {
     @Column(name = "license_number", nullable = false, unique = true)
     private String licenseNumber;
 
+    @Column(name = "medical_unit")
+    private String medicalUnit;
+
     // --- Getters & Setters ---
 
     public UUID getId() { return id; }
@@ -53,4 +56,7 @@ public class Doctor {
 
     public String getLicenseNumber() { return licenseNumber; }
     public Doctor setLicenseNumber(String licenseNumber) { this.licenseNumber = licenseNumber; return this; }
+
+    public String getMedicalUnit() { return medicalUnit; }
+    public Doctor setMedicalUnit(String medicalUnit) { this.medicalUnit = medicalUnit; return this; }
 }

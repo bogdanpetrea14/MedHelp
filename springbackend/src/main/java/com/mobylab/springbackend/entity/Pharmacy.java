@@ -36,6 +36,12 @@ public class Pharmacy {
     @Column(name = "longitude", nullable = false)
     private Double longitude;
 
+    @Column(name = "cui", unique = true)
+    private String cui;
+
+    @Column(name = "pharmacy_license")
+    private String pharmacyLicense;
+
     // --- Getters & Setters ---
 
     public UUID getId() { return id; }
@@ -54,4 +60,10 @@ public class Pharmacy {
 
     public Double getLongitude() { return longitude; }
     public Pharmacy setLongitude(Double longitude) { this.longitude = longitude; return this; }
+
+    public String getCui() { return cui; }
+    public Pharmacy setCui(String cui) { this.cui = cui; return this; }
+
+    public String getPharmacyLicense() { return pharmacyLicense; }
+    public Pharmacy setPharmacyLicense(String pharmacyLicense) { this.pharmacyLicense = pharmacyLicense; return this; }
 }

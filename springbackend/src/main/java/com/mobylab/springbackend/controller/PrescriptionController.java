@@ -1,7 +1,9 @@
 package com.mobylab.springbackend.controller;
 
+import com.mobylab.springbackend.dto.CancelPrescriptionDto;
 import com.mobylab.springbackend.dto.CreatePrescriptionDto;
 import com.mobylab.springbackend.dto.FulfillDto;
+import com.mobylab.springbackend.dto.UpdatePrescriptionDto;
 import com.mobylab.springbackend.entity.Prescription;
 import com.mobylab.springbackend.service.PrescriptionService;
 import jakarta.validation.Valid;
@@ -12,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/prescriptions")
@@ -62,10 +65,38 @@ public class PrescriptionController {
         return ResponseEntity.ok("Rețeta a fost actualizată, iar stocul farmaciei a fost redus cu succes!");
     }
 
+    @GetMapping("/my-doctor-prescriptions")
+    @PreAuthorize("hasAuthority('DOCTOR')")
+    public ResponseEntity<List<Prescription>> getDoctorPrescriptions() {
+        return ResponseEntity.ok(prescriptionService.getDoctorPrescriptions());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> deletePrescription(@PathVariable UUID id) {
+        prescriptionService.deletePrescription(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('DOCTOR') or hasAuthority('ADMIN')")
+    public ResponseEntity<String> cancelPrescription(
+            @PathVariable UUID id,
+            @Valid @RequestBody CancelPrescriptionDto dto) {
+        prescriptionService.cancelPrescription(id, dto);
+        return ResponseEntity.ok("Rețeta a fost anulată.");
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('DOCTOR')")
+    public ResponseEntity<String> updatePrescription(@PathVariable UUID id, @RequestBody UpdatePrescriptionDto dto) {
+        prescriptionService.updatePrescription(id, dto);
+        return ResponseEntity.ok("Rețeta a fost actualizată cu succes!");
+    }
+
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<List<Prescription>> getAllPrescriptions() {
         return ResponseEntity.ok(prescriptionService.getAllPrescriptions());
-        // În service doar faci: return prescriptionRepository.findAll();
     }
 }
